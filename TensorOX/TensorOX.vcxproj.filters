@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CudaCompile Include="kernel.cu" />
+    <CudaCompile Include="UScaleLayer.cu">
+      <Filter>Scale</Filter>
+    </CudaCompile>
+    <CudaCompile Include="preprocess.cu">
+      <Filter>common</Filter>
+    </CudaCompile>
+    <CudaCompile Include="IActivationLayer.cu">
+      <Filter>Activation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="IConcatenationLayer.cpp">
+      <Filter>Concat</Filter>
+    </CudaCompile>
+    <CudaCompile Include="IElementWiseLayer.cu">
+      <Filter>Element</Filter>
+    </CudaCompile>
+    <CudaCompile Include="IPoolingLayer.cu">
+      <Filter>Pooling</Filter>
+    </CudaCompile>
+    <CudaCompile Include="IUpsampleLayer.cu">
+      <Filter>Upsample</Filter>
+    </CudaCompile>
+    <CudaCompile Include="decode.cu">
+      <Filter>yolo</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Conv">
+      <UniqueIdentifier>{10495929-cb8d-4fa3-9617-bdaa30d26dce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scale">
+      <UniqueIdentifier>{0fd0c899-ddd4-4a08-a020-ad72c4ded589}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{79308829-a1f0-44f1-a246-59e6262ef3a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Element">
+      <UniqueIdentifier>{329dad87-4982-4adc-9b06-64802f55655a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Concat">
+      <UniqueIdentifier>{4ccbbb3c-4df7-41d5-a41b-fc3883ab2d17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Activation">
+      <UniqueIdentifier>{1dda56d1-9188-4b40-821f-7ca96d593a96}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pooling">
+      <UniqueIdentifier>{9d5b880a-ab63-434a-8c8e-5fb7100bd62a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Upsample">
+      <UniqueIdentifier>{384e7ef6-ce89-4631-b2e9-1cc0a49a0da2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="yolo">
+      <UniqueIdentifier>{7969f7a0-db6e-4dd5-a560-a9faf9914754}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="IConvolutionLayer.h">
+      <Filter>Conv</Filter>
+    </ClInclude>
+    <ClInclude Include="IScaleLayer.h">
+      <Filter>Scale</Filter>
+    </ClInclude>
+    <ClInclude Include="IConvolutionLayer_BN.h">
+      <Filter>Conv</Filter>
+    </ClInclude>
+    <ClInclude Include="UScaleLayer.h">
+      <Filter>Scale</Filter>
+    </ClInclude>
+    <ClInclude Include="algo_common.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="preprocess.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="IActivationLayer.h">
+      <Filter>Activation</Filter>
+    </ClInclude>
+    <ClInclude Include="IConcatenationLayer.h">
+      <Filter>Concat</Filter>
+    </ClInclude>
+    <ClInclude Include="IElementWiseLayer.h">
+      <Filter>Element</Filter>
+    </ClInclude>
+    <ClInclude Include="IPoolingLayer.h">
+      <Filter>Pooling</Filter>
+    </ClInclude>
+    <ClInclude Include="IUpsampleLayer.h">
+      <Filter>Upsample</Filter>
+    </ClInclude>
+    <ClInclude Include="convBlock.h">
+      <Filter>yolo</Filter>
+    </ClInclude>
+    <ClInclude Include="bottleneck.h">
+      <Filter>yolo</Filter>
+    </ClInclude>
+    <ClInclude Include="C3.h">
+      <Filter>yolo</Filter>
+    </ClInclude>
+    <ClInclude Include="SPPF.h">
+      <Filter>yolo</Filter>
+    </ClInclude>
+    <ClInclude Include="yolo_v5_6.h">
+      <Filter>yolo</Filter>
+    </ClInclude>
+    <ClInclude Include="decode.h">
+      <Filter>yolo</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="demo.cpp" />
+    <ClCompile Include="IConvolutionLayer.cpp">
+      <Filter>Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="IScaleLayer.cpp">
+      <Filter>Scale</Filter>
+    </ClCompile>
+    <ClCompile Include="IConvolutionLayer_BN.cpp">
+      <Filter>Conv</Filter>
+    </ClCompile>
+    <ClCompile Include="algo_common.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="convBlock.cpp">
+      <Filter>yolo</Filter>
+    </ClCompile>
+    <ClCompile Include="bottleneck.cpp">
+      <Filter>yolo</Filter>
+    </ClCompile>
+    <ClCompile Include="C3.cpp">
+      <Filter>yolo</Filter>
+    </ClCompile>
+    <ClCompile Include="SPPF.cpp">
+      <Filter>yolo</Filter>
+    </ClCompile>
+    <ClCompile Include="yolo_v5_6.cpp">
+      <Filter>yolo</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
