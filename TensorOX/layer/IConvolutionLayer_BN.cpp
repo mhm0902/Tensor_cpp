@@ -1,4 +1,5 @@
 #include "IConvolutionLayer_BN.h"
+#include "IConvolutionLayer.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,8 +13,6 @@
 
 #include "opencv2\opencv.hpp"
 
-
-
 //后期优化实现
 IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeights, Weights _biasWeights,
 	Weights _gammaWeights, Weights _betaWeights, Weights _meanWeights, Weights _varWeights, float _fEps)
@@ -21,14 +20,6 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 	m_pstBias = NULL;
 	m_pstWeights = NULL;
 	m_bHasBias = true;
-	m_handle = nullptr;
-	m_input_descriptor = nullptr;
-	m_output_descriptor = nullptr;
-	m_kernel_descriptor = nullptr;
-	m_conv_descriptor = nullptr;
-	m_bias_descriptor = nullptr;
-	m_workspace = nullptr;
-
 	if (_biasWeights.count > 0 && _biasWeights.values != NULL)//以后遇到再实现
 	{		
 		
@@ -54,15 +45,18 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 
 		int iBiasNum = _betaWeights.count;
 
-		float * pfBais = (float *)(_betaWeights.values);
+		float* pfBais = (float *)(_betaWeights.values);
+		float* pfGamm = (float*)(_gammaWeights.values);
+		float* pfMean = (float*)(_meanWeights.values);
+		float* pfVarr = (float*)(_varWeights.values);
 
 		for (int j = 0; j < iBiasNum; j++)
 		{
-			float fGam = ((float*)(_gammaWeights.values))[j];
-			float fMean = ((float*)(_meanWeights.values))[j];
-			float fVar = sqrt(((float*)(_varWeights.values))[j] + _fEps);			
-			*pfBais = ( *pfBais ) - fGam * fMean / fVar;
-			pfBais++;
+			float fGam = pfGamm[j];
+			float fMean = pfMean[j];
+			float fVar = sqrt(pfVarr[j] + _fEps);
+			pfBais[j] -= fGam * fMean / fVar;
+			//pfBais++;
 		}
 
 		m_pstBias->values = CNN_GPU_MemMaloc(0, _betaWeights.count * iTypeSize);
@@ -114,16 +108,19 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 	int iKernelSize = _kernelSize.d[1] * _kernelSize.d[2] * _kernelSize.d[3];//chw
 	int iKernelNum = _kernelSize.d[0];//n					_kernelWeights.count / iKernelSize;
 	float * pfKWeights = (float *)(_kernelWeights.values);
+	float* pfGamm = (float*)(_gammaWeights.values);
+	float* pfVarr = (float*)(_varWeights.values);
+
 	for (int j = 0; j < iKernelNum; j++)
 	{
 		//权重更新
-		float fGam = ((float*)(_gammaWeights.values))[j];
-		float fVar = sqrt(((float*)(_varWeights.values))[j] + _fEps);
+		float fGam = pfGamm[j];
+		float fVar = sqrt( pfVarr[j] + _fEps );
+		float fW = fGam / fVar;
 		for (int k = 0; k < iKernelSize; k++)
 		{
-			*pfKWeights = (*pfKWeights) * fGam / fVar;
+			pfKWeights[j*iKernelSize + k] *= fW;
 
-			pfKWeights++;
 		}
 	}
 
@@ -144,122 +141,7 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 	m_stPadding		= DimsHW(0, 0);	//宽度方向填充像素数
 }
 
-Dims IConvolutionLayer_BN::init(Dims _stInPut)
-{
-	Dims stOutPut;
 
-	cudnnCreate(&m_handle);
-
-	cudnnCreateTensorDescriptor(&m_input_descriptor);
-	cudnnSetTensor4dDescriptor(m_input_descriptor, CUDNN_TENSOR_NHWC, CUDNN_DATA_FLOAT, 
-		_stInPut.d[0], _stInPut.d[1], _stInPut.d[2], _stInPut.d[3]);
-
-	stOutPut.nbDims = _stInPut.nbDims;
-	stOutPut.d[0] = _stInPut.d[0];//n
-	stOutPut.d[1] = m_stKernel.d[0];	// c 
-	int iFeatMap_h = stOutPut.d[2] = 1 + (_stInPut.d[2] + 2 * m_stPadding.d[0] - m_stKernel.d[2]) / m_stStride.d[0]; //h
-	int iFeatMap_w = stOutPut.d[3] = 1 + (_stInPut.d[3] + 2 * m_stPadding.d[1] - m_stKernel.d[3]) / m_stStride.d[1]; //w
-
-	cudnnCreateTensorDescriptor(&m_output_descriptor);
-	cudnnSetTensor4dDescriptor(m_output_descriptor, CUDNN_TENSOR_NHWC, CUDNN_DATA_FLOAT, 
-		stOutPut.d[0], stOutPut.d[1], stOutPut.d[2], stOutPut.d[3]);
-
-	cudnnCreateFilterDescriptor(&m_kernel_descriptor);
-	cudnnSetFilter4dDescriptor(m_kernel_descriptor, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW, 
-		m_stKernel.d[0], m_stKernel.d[1], m_stKernel.d[2], m_stKernel.d[3]);
-	// convolution descriptor
-
-	cudnnCreateConvolutionDescriptor(&m_conv_descriptor);
-	cudnnSetConvolution2dDescriptor(m_conv_descriptor,
-		m_stPadding.d[0], m_stPadding.d[1], // zero-padding
-		m_stStride.d[0], m_stStride.d[1], // stride
-		1, 1,
-		CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT);
-
-	cudnnStatus_t eStatus = CUDNN_STATUS_SUCCESS;
-	// algorithm
-#if CUDNN_VERSION_MIN(8, 0, 0)
-	int returnedAlgoCount = 0;
-	int requestedAlgoCount = 1;
-	cudnnConvolutionFwdAlgoPerf_t fwd_algoPer;
-
-	eStatus = cudnnGetConvolutionForwardAlgorithm_v7(m_handle, m_input_descriptor,
-		m_kernel_descriptor, m_conv_descriptor, m_output_descriptor, requestedAlgoCount,
-		&returnedAlgoCount, &fwd_algoPer);
-	m_algo = fwd_algoPer.algo;
-
-	if (CUDNN_STATUS_SUCCESS != eStatus)
-	{
-		printf("cudnnGetConvolutionForwardAlgorithm_v7 error code:%d\n", eStatus);
-		return stOutPut;
-	}
-
-#else
-	// choose forward and backward algorithms + workspace(s)
-	eStatus = cudnnGetConvolutionForwardAlgorithm(*((cudnnHandle_t*)pstGlobalInfos->pCuDNNHandles), pInputDesc,
-		pstCudnnConv->pFilterDesc, pConvDesc, pOutputDesc, CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
-		workspace_limit_bytes, &pstCudnnConv->fwd_algo_[i]);
-#endif
-
-	// workspace size && allocate memory
-	eStatus = cudnnGetConvolutionForwardWorkspaceSize(m_handle, m_input_descriptor, 
-		m_kernel_descriptor, m_conv_descriptor, m_output_descriptor, m_algo, &m_workspace_size);
-
-	if (CUDNN_STATUS_SUCCESS != eStatus)
-	{
-		printf("cudnnGetConvolutionForwardWorkspaceSize error code:%d\n!", eStatus);
-		return stOutPut;
-	}
-
-	cudaMalloc(&m_workspace, m_workspace_size);
-
-	cudnnCreateTensorDescriptor(&m_bias_descriptor);
-	//cudnnSetTensor4dDescriptorEx(bias_descriptor, CUDNN_DATA_FLOAT, _stInPut.d[0], _stInPut.d[1], 1, 1, _stInPut.d[0], _stInPut.d[1], 1, 1);
-	eStatus = setTensor4dDesc<float>(&m_bias_descriptor, 1, m_pstBias->count, 1, 1);
-
-	if (CUDNN_STATUS_SUCCESS != eStatus)
-	{
-		printf("cudnnAddTensor error code:%d\n!", eStatus);
-		return stOutPut;
-	}
-
-	return stOutPut;
-}
-int IConvolutionLayer_BN::forwardEx(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut)
-{
-	_stOutPut.nbDims = _stInPut.nbDims;
-	_stOutPut.d[0] = _stInPut.d[0];//n
-	_stOutPut.d[1] = m_stKernel.d[0];	// c 
-	int iFeatMap_h = _stOutPut.d[2] = 1 + (_stInPut.d[2] + 2 * m_stPadding.d[0] - m_stKernel.d[2]) / m_stStride.d[0]; //h
-	int iFeatMap_w = _stOutPut.d[3] = 1 + (_stInPut.d[3] + 2 * m_stPadding.d[1] - m_stKernel.d[3]) / m_stStride.d[1]; //w
-
-	auto alpha = 1.0f, beta = 0.0f;
-	_stOutPut.nbDims = 4;
-
-	cudnnStatus_t eStatus = cudnnConvolutionForward(m_handle, &alpha, m_input_descriptor, _pInData,
-		m_kernel_descriptor, m_pstWeights->values,
-		m_conv_descriptor, m_algo, m_workspace, m_workspace_size,
-		&beta, m_output_descriptor, _pOutData);
-
-	if (CUDNN_STATUS_SUCCESS != eStatus)
-	{
-		printf("cudnnConvolutionForward error code:%d\n!", eStatus);
-		return -3;
-	}
-
-	if (true == m_bHasBias)
-	{
-		eStatus = cudnnAddTensor(m_handle, &alpha, m_bias_descriptor, m_pstBias->values, 
-			&beta, m_output_descriptor, _pOutData);
-
-		if (CUDNN_STATUS_SUCCESS != eStatus)
-		{
-			printf("cudnnAddTensor error code:%d\n!", eStatus);
-			return -4;
-		}
-	}
-	return 0;
-}
 IConvolutionLayer_BN::~IConvolutionLayer_BN()
 {
 	if (NULL != m_pstBias)
@@ -282,40 +164,6 @@ IConvolutionLayer_BN::~IConvolutionLayer_BN()
 		free(m_pstWeights);
 		m_pstWeights = NULL;
 	}
-	if (nullptr != m_bias_descriptor) {
-		cudnnDestroyTensorDescriptor(m_bias_descriptor);
-		m_bias_descriptor = nullptr;
-	}
-	
-	if (nullptr != m_workspace) {
-		cudaFree(m_workspace);
-		m_workspace = nullptr;
-	}
-	
-	if (nullptr != m_input_descriptor) {
-		cudnnDestroyTensorDescriptor(m_input_descriptor);
-		m_input_descriptor = nullptr;
-	}
-
-	if (nullptr != m_output_descriptor) {
-		cudnnDestroyTensorDescriptor(m_output_descriptor);
-		m_output_descriptor = nullptr;
-	}
-
-	if (nullptr != m_conv_descriptor) {
-		cudnnDestroyConvolutionDescriptor(m_conv_descriptor);
-		m_conv_descriptor = nullptr;
-	}
-
-	if (nullptr != m_kernel_descriptor) {
-		cudnnDestroyFilterDescriptor(m_kernel_descriptor);
-		m_kernel_descriptor = nullptr;
-	}
-
-	if (nullptr != m_handle) {
-		cudnnDestroy(m_handle);
-		m_handle = nullptr;
-	}
 }
 
 int IConvolutionLayer_BN::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut)
@@ -326,7 +174,7 @@ int IConvolutionLayer_BN::forward(void* _pInData, Dims _stInPut, void* _pOutData
 
 	cudnnTensorDescriptor_t input_descriptor;
 	cudnnCreateTensorDescriptor(&input_descriptor);
-	cudnnSetTensor4dDescriptor(input_descriptor, CUDNN_TENSOR_NHWC, CUDNN_DATA_FLOAT, _stInPut.d[0], _stInPut.d[1], _stInPut.d[2], _stInPut.d[3]);
+	cudnnSetTensor4dDescriptor(input_descriptor, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, _stInPut.d[0], _stInPut.d[1], _stInPut.d[2], _stInPut.d[3]);
 
 	_stOutPut.nbDims = _stInPut.nbDims;
 	_stOutPut.d[0] = _stInPut.d[0];//n
@@ -337,7 +185,7 @@ int IConvolutionLayer_BN::forward(void* _pInData, Dims _stInPut, void* _pOutData
 
 	cudnnTensorDescriptor_t output_descriptor;
 	cudnnCreateTensorDescriptor(&output_descriptor);
-	cudnnSetTensor4dDescriptor(output_descriptor, CUDNN_TENSOR_NHWC, CUDNN_DATA_FLOAT, _stOutPut.d[0], _stOutPut.d[1], _stOutPut.d[2], _stOutPut.d[3]);
+	cudnnSetTensor4dDescriptor(output_descriptor, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, _stOutPut.d[0], _stOutPut.d[1], _stOutPut.d[2], _stOutPut.d[3]);
 
 	cudnnFilterDescriptor_t kernel_descriptor;
 	cudnnCreateFilterDescriptor(&kernel_descriptor);
@@ -409,6 +257,7 @@ int IConvolutionLayer_BN::forward(void* _pInData, Dims _stInPut, void* _pOutData
 		cudnnCreateTensorDescriptor(&bias_descriptor);
 		//cudnnSetTensor4dDescriptorEx(bias_descriptor, CUDNN_DATA_FLOAT, _stInPut.d[0], _stInPut.d[1], 1, 1, _stInPut.d[0], _stInPut.d[1], 1, 1);
 		eStatus = setTensor4dDesc<float>(&bias_descriptor, 1, m_pstBias->count, 1, 1);
+		auto alpha = 1.0f, beta = 1.0f;
 		eStatus = cudnnAddTensor(handle, &alpha, bias_descriptor, m_pstBias->values, &beta, output_descriptor, _pOutData);
 
 		if (CUDNN_STATUS_SUCCESS != eStatus)
@@ -427,6 +276,54 @@ int IConvolutionLayer_BN::forward(void* _pInData, Dims _stInPut, void* _pOutData
 	cudnnDestroyConvolutionDescriptor(conv_descriptor);
 	cudnnDestroyFilterDescriptor(kernel_descriptor);
 	cudnnDestroy(handle);
+
+	return 0;
+}
+
+
+int IConvolutionLayer_BN::forwardGMM(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut, void *_pBiasMultip, void *_pBuffer)
+{
+	_stOutPut.nbDims = _stInPut.nbDims;
+	_stOutPut.d[0] = _stInPut.d[0];//n
+	_stOutPut.d[1] = m_stKernel.d[0];	// c 
+	int iFeatMap_h = _stOutPut.d[2] = 1 + (_stInPut.d[2] + 2 * m_stPadding.d[0] - m_stKernel.d[2]) / m_stStride.d[0]; //h
+	int iFeatMap_w = _stOutPut.d[3] = 1 + (_stInPut.d[3] + 2 * m_stPadding.d[1] - m_stKernel.d[3]) / m_stStride.d[1]; //w
+
+
+	int M = m_stKernel.d[0];
+	int N = iFeatMap_h * iFeatMap_w;
+	int K = _stInPut.d[1] * m_stKernel.d[2] * m_stKernel.d[3];
+	int iInputStep = _stInPut.d[1] * _stInPut.d[2] * _stInPut.d[3];
+	int iOutputStep = M * N;
+	bool b1x1 = (1 == m_stKernel.d[2]) && (1 == m_stKernel.d[3]);
+	cublasHandle_t hCuBLAS = NULL;
+
+	cublasCreate_v2(&hCuBLAS);
+
+	const float* weight = (float*)(m_pstWeights->values);
+
+	for (int n = 0; n < _stInPut.d[0]; ++n)
+	{
+		const float* col_buff = ((float*)_pInData) + n * iInputStep;
+		if (!b1x1)
+		{
+			CNN_Im2Col_GPU<float>(col_buff, _stInPut.d[1], _stInPut.d[2], _stInPut.d[3],
+				m_stKernel.d[2], m_stKernel.d[3],
+				m_stPadding.d[0], m_stPadding.d[1],
+				m_stStride.d[0], m_stStride.d[1],
+				m_stDilation.d[0], m_stDilation.d[1],
+				(float*)_pBuffer);
+			col_buff = (float*)_pBuffer;
+		}
+		CNN_Util_Math_Gemm_GPU(CblasNoTrans, CblasNoTrans, M, N, K,
+			1., weight, col_buff, 0., (float*)_pOutData + n * iOutputStep, hCuBLAS);
+
+		if (m_bHasBias)
+		{
+			CNN_Util_Math_Gemm_GPU(CblasNoTrans, CblasNoTrans, M, N, 1,
+				1., (float*)(m_pstBias->values), (float*)_pBiasMultip, 1., (float*)_pOutData + n * iOutputStep, hCuBLAS);
+		}
+	}
 
 	return 0;
 }

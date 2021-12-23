@@ -19,10 +19,6 @@
 //{
 //#endif
 
-static constexpr int INPUT_H = 640;  // yolov5's input height and width must be divisible by 32.
-static constexpr int INPUT_W = 640;
-static int CLASS_NUM = 80;
-
 //!
 //! \enum DataType
 //!
@@ -30,22 +26,9 @@ static int CLASS_NUM = 80;
 //!
 #define CUDNN_VERSION_MIN(major, minor, patch) (CUDNN_VERSION >= (major * 1000 + minor * 100 + patch))
 
-template <typename Dtype>
-inline cudnnStatus_t setTensor4dDesc(cudnnTensorDescriptor_t* desc, int n, int c, int h, int w,
-	int stride_n, int stride_c, int stride_h, int stride_w)
-{
-	return cudnnSetTensor4dDescriptorEx(*desc, CUDNN_DATA_FLOAT, n, c, h, w, stride_n, stride_c, stride_h, stride_w);
-}
-
-template <typename Dtype>
-inline cudnnStatus_t setTensor4dDesc(cudnnTensorDescriptor_t* desc, int n, int c, int h, int w)
-{
-	const int stride_w = 1;
-	const int stride_h = w * stride_w;
-	const int stride_c = h * stride_h;
-	const int stride_n = c * stride_c;
-	return setTensor4dDesc<Dtype>(desc, n, c, h, w, stride_n, stride_c, stride_h, stride_w);
-}
+static constexpr int INPUT_H = 640;  // yolov5's input height and width must be divisible by 32.
+static constexpr int INPUT_W = 640;
+static int CLASS_NUM = 80;
 
 const int CNN_CUDA_NUM_THREADS = 512;
 
@@ -69,6 +52,23 @@ enum class DataType
 	kINT32	= 3,//! Signed 32-bit integer format.		
 	kBOOL	= 4//! 8-bit boolean. 0 = false, 1 = true, other values undefined.
 };
+
+template <typename Dtype>
+inline cudnnStatus_t setTensor4dDesc(cudnnTensorDescriptor_t* desc, int n, int c, int h, int w,
+	int stride_n, int stride_c, int stride_h, int stride_w)
+{
+	return cudnnSetTensor4dDescriptorEx(*desc, CUDNN_DATA_FLOAT, n, c, h, w, stride_n, stride_c, stride_h, stride_w);
+}
+
+template <typename Dtype>
+inline cudnnStatus_t setTensor4dDesc(cudnnTensorDescriptor_t* desc, int n, int c, int h, int w)
+{
+	const int stride_w = 1;
+	const int stride_h = w * stride_w;
+	const int stride_c = h * stride_h;
+	const int stride_n = c * stride_c;
+	return setTensor4dDesc<Dtype>(desc, n, c, h, w, stride_n, stride_c, stride_h, stride_w);
+}
 
 class Weights
 {
@@ -261,7 +261,7 @@ void* CNN_GPU_MemMaloc(int _iGpuIndex, unsigned int _uiMemSize);
 int CNN_GPU_Memcpy(const size_t N, const void* X, void* Y);
 int CNN_GPU_MemFree(void* _pMemBuffer);
 int Get_Type_Szie(DataType	_type);
-int get_bolck_size(Dims _stInPut);
+size_t get_bolck_size(Dims _stInPut);
 //#ifdef __cplusplus
 //}
 //#endif

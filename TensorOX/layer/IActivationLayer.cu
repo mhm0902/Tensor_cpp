@@ -13,6 +13,7 @@ template <typename Dtype> __global__ void SiLUForward(const int n, const Dtype* 
 	{
 		Dtype x = in[i];
 		out[i] = x /( 1 + exp(-x) ) ;
+		//printf("%f,%d", out[i], i);
 	}
 }
 
@@ -74,5 +75,6 @@ int IActivationLayer::forward(void* _pInData, Dims _stInPut, void* _pOutData)
 		}
 		break;
 	}
+	cudaDeviceSynchronize();
 	return 0;
 }

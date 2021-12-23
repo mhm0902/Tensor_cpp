@@ -16,10 +16,6 @@ public:
 	SPPF(std::map<std::string, Weights>& weightMap, int inch, int c1, int c2, int k, std::string lname);
 	~SPPF();
 	int forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut, void *_pBuffer);
-
-	/////////////////固定输入输出加速方法////////////////////////////////////////////
-	Dims init(Dims _stInPut);
-	int forwardEx(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut, void *_pBuffer);
 private:
 	convBlock *cv1;
 	convBlock *cv2;

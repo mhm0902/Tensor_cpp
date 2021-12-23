@@ -73,37 +73,3 @@ int bottleneck::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_s
 	}
 	return 0;
 };
-
-Dims bottleneck::init(Dims _stInPut)
-{
-	Dims dim_out = conv1->init(_stInPut);
-	dim_out = conv2->init(dim_out);
-
-	return dim_out;
-}
-
-int bottleneck::forwardEx(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut, void *_pBuffer)
-{
-	if (ew)
-	{
-		Dims cv1_o_dim;
-		void* buffer1 = _pBuffer;
-		void *tmp_buf = (char*)_pBuffer + get_bolck_size(_stInPut) * sizeof(float);
-		conv1->forwardEx(_pInData, _stInPut, buffer1, cv1_o_dim, tmp_buf);
-		void* buffer2 = (char*)_pBuffer + get_bolck_size(cv1_o_dim) * sizeof(float);
-
-		tmp_buf = (char*)buffer2 + get_bolck_size(cv1_o_dim) * sizeof(float);
-		conv2->forwardEx(buffer1, cv1_o_dim, buffer2, _stOutPut, tmp_buf);
-		ew->forward(_pInData, buffer2, _stInPut, CNN_ELTWISE_SUM, _pOutData);
-	}
-	else
-	{
-		Dims cv1_o_dim;
-		void* buffer1 = _pBuffer;
-		void *tmp_buf = (char*)_pBuffer + get_bolck_size(_stInPut) * sizeof(float);
-		conv1->forwardEx(_pInData, _stInPut, buffer1, cv1_o_dim, tmp_buf);
-		conv2->forwardEx(buffer1, cv1_o_dim, _pOutData, _stOutPut, tmp_buf);
-	}
-	return 0;
-}
-

@@ -4,7 +4,8 @@
 
 C3::C3(std::map<std::string, Weights>& weightMap, int inch, int c1, int c2, int n, bool shortcut, int g, float e, std::string lname)
 {
-	cv1 = cv2 = cv3 = NULL;
+	cv1 = cv2 = NULL;
+	cv3 = NULL;
 	cat = NULL;
 	//buffer1 = buffer2 = buffer3 = NULL;
 	bot.clear();
@@ -20,7 +21,11 @@ C3::C3(std::map<std::string, Weights>& weightMap, int inch, int c1, int c2, int 
 
 	cat = new IConcatenationLayer();
 
-	cv3 = new convBlock(weightMap, c_, c2, 1, 1, 1, lname + ".cv3");
+	cv3 = new convBlock(weightMap, c_*2, c2, 1, 1, 1, lname + ".cv3");
+
+	//Weights emptywts{ DataType::kFLOAT, nullptr, 0 };
+
+	//cv3 = new IConvolutionLayer(64, DimsNCHW{ 64, 64, 1, 1 }, weightMap[lname + ".cv3.conv.weight"], emptywts);
 
 	//cudaMalloc((void**)&buffer1, 8 * INPUT_H * INPUT_W * sizeof(float));
 
@@ -87,7 +92,7 @@ int C3::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut,
 
 	cv1->forward(_pInData, _stInPut, buffer1, stDimCv1, tmp_buf);
 
-	int iOffset = get_bolck_size(stDimCv1) * sizeof(float);
+	size_t iOffset = get_bolck_size(stDimCv1) * sizeof(float);
 
 	void* buffer2 = (char*)_pBuffer + iOffset;
 
@@ -111,65 +116,18 @@ int C3::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut,
 
 	cat->forward(y1, stDimCv1, y2, stDimCv2, buffer3, stDimCv3);
 
+	//cudaStream_t stream;
+	//cudaStreamCreate(&stream);
+	//size_t iszie = get_bolck_size(stDimCv3) * sizeof(float);
+	//float *prob = (float*)malloc(iszie);
+	//cudaMemcpyAsync(prob, buffer3, iszie, cudaMemcpyDeviceToHost, stream);
+
 	tmp_buf = (char*)buffer3 + get_bolck_size(stDimCv3) * sizeof(float);
 
 	cv3->forward(buffer3, stDimCv3, _pOutData, _stOutPut, tmp_buf);
 
+	//cv3->forward(buffer3, stDimCv3, _pOutData, _stOutPut);
+
+
 	return 0;
 };
-
-
-Dims C3::init(Dims _stInPut) 
-{
-	Dims stDimCv1 = cv1->init(_stInPut);
-
-	Dims stDimCv2 = stDimCv1;
-	for (size_t i = 0; i < bot.size(); i++)
-	{
-		stDimCv2 = bot[i]->init(stDimCv2);
-	}
-	stDimCv1 = cv2->init(_stInPut);
-	stDimCv1.d[1] += stDimCv2.d[1];
-	stDimCv1 = cv3->init(stDimCv1);
-
-	return stDimCv1;
-}
-
-int C3::forwardEx(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut, void *_pBuffer)
-{
-	Dims stDimCv1, stDimCv2, stDimCv3;
-	void* buffer1 = _pBuffer;
-	void *tmp_buf = (char*)buffer1 + get_bolck_size(_stInPut) * sizeof(float);
-
-	cv1->forwardEx(_pInData, _stInPut, buffer1, stDimCv1, tmp_buf);
-
-	int iOffset = get_bolck_size(stDimCv1) * sizeof(float);
-
-	void* buffer2 = (char*)_pBuffer + iOffset;
-
-	tmp_buf = (char*)buffer2 + iOffset;
-
-	void *y1 = buffer1;
-	void *y2 = buffer2;
-	for (size_t i = 0; i < bot.size(); i++)
-	{
-		bot[i]->forwardEx(y1, stDimCv1, y2, stDimCv2, tmp_buf);
-
-		void *tmp = y1;
-		y1 = y2;
-		y2 = tmp;
-		stDimCv1 = stDimCv2;
-	}
-
-	cv2->forwardEx(_pInData, _stInPut, y2, stDimCv2, tmp_buf);
-
-	void *buffer3 = (char*)buffer2 + get_bolck_size(stDimCv1) * sizeof(float);
-
-	cat->forward(y1, stDimCv1, y2, stDimCv2, buffer3, stDimCv3);
-
-	tmp_buf = (char*)buffer3 + get_bolck_size(stDimCv3) * sizeof(float);
-
-	cv3->forwardEx(buffer3, stDimCv3, _pOutData, _stOutPut, tmp_buf);
-
-	return 0;
-}

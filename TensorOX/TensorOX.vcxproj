@@ -47,7 +47,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\tools\opencv\opencv-4.5.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\tools\opencv\opencv-4.5.0\include;./common;./layer;./yolo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -66,7 +66,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\tools\opencv\opencv-4.5.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\tools\opencv\opencv-4.5.0\include;./common;./layer;./yolo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -81,46 +81,46 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="decode.cu" />
-    <CudaCompile Include="IPoolingLayer.cu" />
-    <CudaCompile Include="IUpsampleLayer.cu" />
+    <CudaCompile Include="common\preprocess.cu" />
     <CudaCompile Include="kernel.cu" />
-    <CudaCompile Include="preprocess.cu" />
-    <CudaCompile Include="IConcatenationLayer.cpp" />
-    <CudaCompile Include="IElementWiseLayer.cu" />
-    <CudaCompile Include="IActivationLayer.cu" />
-    <CudaCompile Include="UScaleLayer.cu" />
+    <CudaCompile Include="layer\IActivationLayer.cu" />
+    <CudaCompile Include="layer\IConvolutionLayer.cu" />
+    <CudaCompile Include="layer\IElementWiseLayer.cu" />
+    <CudaCompile Include="layer\IPoolingLayer.cu" />
+    <CudaCompile Include="layer\IUpsampleLayer.cu" />
+    <CudaCompile Include="layer\UScaleLayer.cu" />
+    <CudaCompile Include="yolo\yololayer.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="algo_common.h" />
-    <ClInclude Include="bottleneck.h" />
-    <ClInclude Include="C3.h" />
-    <ClInclude Include="convBlock.h" />
-    <ClInclude Include="decode.h" />
-    <ClInclude Include="IConvolutionLayer.h" />
-    <ClInclude Include="IConvolutionLayer_BN.h" />
-    <ClInclude Include="IPoolingLayer.h" />
-    <ClInclude Include="IScaleLayer.h" />
-    <ClInclude Include="IUpsampleLayer.h" />
-    <ClInclude Include="preprocess.h" />
-    <ClInclude Include="IConcatenationLayer.h" />
-    <ClInclude Include="IElementWiseLayer.h" />
-    <ClInclude Include="IActivationLayer.h" />
-    <ClInclude Include="SPPF.h" />
-    <ClInclude Include="UScaleLayer.h" />
-    <ClInclude Include="yolo_v5_6.h" />
+    <ClInclude Include="common\algo_common.h" />
+    <ClInclude Include="common\preprocess.h" />
+    <ClInclude Include="layer\IActivationLayer.h" />
+    <ClInclude Include="layer\IConcatenationLayer.h" />
+    <ClInclude Include="layer\IConvolutionLayer.h" />
+    <ClInclude Include="layer\IConvolutionLayer_BN.h" />
+    <ClInclude Include="layer\IElementWiseLayer.h" />
+    <ClInclude Include="layer\IPoolingLayer.h" />
+    <ClInclude Include="layer\IScaleLayer.h" />
+    <ClInclude Include="layer\IUpsampleLayer.h" />
+    <ClInclude Include="layer\UScaleLayer.h" />
+    <ClInclude Include="yolo\bottleneck.h" />
+    <ClInclude Include="yolo\C3.h" />
+    <ClInclude Include="yolo\convBlock.h" />
+    <ClInclude Include="yolo\SPPF.h" />
+    <ClInclude Include="yolo\yololayer.h" />
+    <ClInclude Include="yolo\yolo_v5_6.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="algo_common.cpp" />
-    <ClCompile Include="bottleneck.cpp" />
-    <ClCompile Include="C3.cpp" />
-    <ClCompile Include="convBlock.cpp" />
-    <ClCompile Include="IConvolutionLayer.cpp" />
+    <ClCompile Include="common\algo_common.cpp" />
     <ClCompile Include="demo.cpp" />
-    <ClCompile Include="IConvolutionLayer_BN.cpp" />
-    <ClCompile Include="IScaleLayer.cpp" />
-    <ClCompile Include="SPPF.cpp" />
-    <ClCompile Include="yolo_v5_6.cpp" />
+    <ClCompile Include="layer\IConcatenationLayer.cpp" />
+    <ClCompile Include="layer\IConvolutionLayer_BN.cpp" />
+    <ClCompile Include="layer\IScaleLayer.cpp" />
+    <ClCompile Include="yolo\bottleneck.cpp" />
+    <ClCompile Include="yolo\C3.cpp" />
+    <ClCompile Include="yolo\convBlock.cpp" />
+    <ClCompile Include="yolo\SPPF.cpp" />
+    <ClCompile Include="yolo\yolo_v5_6.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

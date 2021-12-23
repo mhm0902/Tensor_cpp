@@ -13,10 +13,6 @@ public:
 	~bottleneck();
 
 	int forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut, void *_pBuffer);
-
-	/////////////////固定输入输出加速方法////////////////////////////////////////////
-	Dims init(Dims _stInPut);
-	int forwardEx(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut, void *_pBuffer);
 private:
 	convBlock* conv1;
 	convBlock* conv2;

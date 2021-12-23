@@ -42,8 +42,8 @@ int IConcatenationLayer::forward(void* _pInA, Dims _stInA, void* _pInB, Dims _st
 	_stOutY.d[2] = _stInA.d[2];					//h
 	_stOutY.d[3] = _stInA.d[3];					//w
 
-	int iSizeA = _stInA.d[1] * _stInA.d[2] * _stInA.d[3] * sizeof(float);
-	int iSzieB = _stInB.d[1] * _stInB.d[2] * _stInB.d[3] * sizeof(float);
+	int iSizeA = _stInA.d[1] * _stInA.d[2] * _stInA.d[3];
+	int iSzieB = _stInB.d[1] * _stInB.d[2] * _stInB.d[3];
 
 	float* pTensorA = (float*)_pInA;
 	float* pTensorB = (float*)_pInB;

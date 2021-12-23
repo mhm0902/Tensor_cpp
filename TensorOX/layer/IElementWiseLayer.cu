@@ -58,5 +58,6 @@ int IElementWiseLayer::forward(void* _pInA, void* _pInB, Dims _stInPut, ELTWISE_
 		//LOG(FATAL) << "Unknown elementwise operation.";
 		break;	//nothing
 	}
+	cudaDeviceSynchronize();
 	return 0;
 }

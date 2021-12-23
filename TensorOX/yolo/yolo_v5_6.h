@@ -12,7 +12,7 @@
 #include "IPoolingLayer.h"
 #include "IUpsampleLayer.h"
 #include "SPPF.h"
-
+#include "yololayer.h"
 
 
 class yolo_v5_6
@@ -22,7 +22,7 @@ public:
 
 	~yolo_v5_6();
 
-	int forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut, void *_pBuffer);
+	int forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut, void *_pBuffer, cudaStream_t stream);
 private:
 	convBlock* conv0;
 	convBlock* conv1;
@@ -51,6 +51,8 @@ private:
 	IConcatenationLayer *cat22;
 	C3* bottleneck_csp23;
 	IConvolutionLayer* det2;
+
+	yoloyaler *decode;
 };
 
 #endif //_YOLO_V5_6_H__

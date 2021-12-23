@@ -97,9 +97,9 @@ int Get_Type_Szie(DataType	_type)
 	}
 	return iTypeSize;
 }
-int get_bolck_size(Dims _stInPut)
+size_t get_bolck_size(Dims _stInPut)
 {
-	int iCount = 1;
+	size_t iCount = 1;
 	for (int i = 0; i < _stInPut.nbDims; i++)
 	{
 		iCount *= _stInPut.d[i];
