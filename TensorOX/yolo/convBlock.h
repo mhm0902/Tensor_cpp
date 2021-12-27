@@ -14,6 +14,7 @@ public:
 
 private:
 	IConvolutionLayer_BN* conv;
+	//IConvolutionLayer* conv;
 	IActivationLayer* silu;
 
 };

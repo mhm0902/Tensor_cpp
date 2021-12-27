@@ -11,8 +11,9 @@ template <typename Dtype> __global__ void SiLUForward(const int n, const Dtype* 
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < (n); i += blockDim.x * gridDim.x)
 	{
-		Dtype x = in[i];
-		out[i] = x /( 1 + exp(-x) ) ;
+		double x = in[i];
+		
+		out[i] = (Dtype)( x /( 1 + exp(-x) ) ) ;
 		//printf("%f,%d", out[i], i);
 	}
 }

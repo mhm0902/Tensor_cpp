@@ -3,6 +3,8 @@
 #include<string.h>
 #include <stdlib.h>
 #include <algorithm>
+#include <iostream>
+#include<iomanip>
 
 int get_width(int x, float gw, int divisor = 8) {
 	return int(ceil((x * gw) / divisor)) * divisor;
@@ -35,6 +37,8 @@ yolo_v5_6::yolo_v5_6(std::map<std::string, Weights> weightMap, float _gd, float 
 	int conv0_inch = 3;
 	int conv0_outch = get_width(64, gw);
 	conv0 = new convBlock(weightMap, conv0_inch, conv0_outch, 6, 2, 1, "model.0");
+
+	//return;
 
 	int conv1_inch = conv0_outch;
 	int conv1_outch = get_width(128, gw);
@@ -325,12 +329,34 @@ int yolo_v5_6::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_st
 	
 	conv0->forward(_pInData, _stInPut, buffer1, dim_tmp1, tmp_buf);
 
+	//cudaStream_t stream;
+	//cudaStreamCreate(&stream);
+	//size_t iszie = get_bolck_size(dim_tmp1) * sizeof(float);
+	//float *prob = (float*)malloc(iszie);
+	//cudaMemcpyAsync(prob, buffer1, iszie, cudaMemcpyDeviceToHost, stream);
+
+	//std::ofstream outfile("outm.txt", std::ios::trunc);
+	//float* pfRes = (float*)prob;
+	//int chanle = dim_tmp1.d[1];
+	//int height = dim_tmp1.d[2];
+	//int weight = dim_tmp1.d[3];
+	//for (int c = 0; c < chanle; c++)
+	//{
+	//	outfile << c << std::endl;
+	//	for (int h = 0; h < height; h++)
+	//	{
+	//		for (int w = 0; w < weight; w++)
+	//		{
+	//			outfile << std::setiosflags(std::ios::left) << std::setw(10) << std::setfill(' ') << pfRes[c*height *weight + h*weight + w] << " ";
+	//		}
+	//		outfile << std::endl;
+	//	}
+	//}
+	//outfile.close();
+	
 	conv1->forward(buffer1, dim_tmp1, buffer2, dim_tmp2, tmp_buf);
 
 	bottleneck_CSP2->forward(buffer2, dim_tmp2, buffer1, dim_tmp1, tmp_buf);
-
-	float *prob = (float*)malloc(1638400 * 4);
-	cudaMemcpyAsync(prob, buffer1, 1638400 * 4, cudaMemcpyDeviceToHost, _stream);
 
 	conv3->forward(buffer1, dim_tmp1, buffer2, dim_tmp2, tmp_buf);
 
@@ -370,7 +396,7 @@ int yolo_v5_6::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_st
 	Dims dim_csp17 = dim_tmp2;
 
 	/* ------ detect ------ */
-	det0->forward(csp17_buf, dim_csp17, det0_buf, dim_tmp1);
+	det0->forwardGMM(csp17_buf, dim_csp17, det0_buf, dim_tmp1);
 	Dims dim_det0 = dim_tmp1;
 	conv18->forward(csp17_buf, dim_csp17, buffer1, dim_tmp1, tmp_buf);
 
@@ -379,7 +405,7 @@ int yolo_v5_6::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_st
 	bottleneck_csp20->forward(buffer2, dim_tmp2, csp20_buf, dim_tmp1, tmp_buf);
 	Dims dim_csp20 = dim_tmp1;
 
-	det1->forward(csp20_buf, dim_tmp1, det1_buf, dim_tmp2);
+	det1->forwardGMM(csp20_buf, dim_tmp1, det1_buf, dim_tmp2);
 	Dims dim_det1 = dim_tmp2;
 
 	conv21->forward(csp20_buf, dim_csp20, buffer1, dim_tmp1, tmp_buf);
@@ -388,7 +414,7 @@ int yolo_v5_6::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_st
 
 	bottleneck_csp23->forward(buffer2, dim_tmp2, buffer1, dim_tmp1, tmp_buf);
 	
-	det2->forward(buffer1, dim_tmp1, det2_buf, dim_tmp2);
+	det2->forwardGMM(buffer1, dim_tmp1, det2_buf, dim_tmp2);
 
 	//cudaStream_t stream;
 	//(cudaStreamCreate(&stream));
@@ -396,6 +422,7 @@ int yolo_v5_6::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_st
 	float* inputsinput_tensors[3] = { (float*)det0_buf, (float*)det1_buf, (float*)det2_buf };
 
 	decode->forward(inputsinput_tensors, (float*)_pOutData, _stream);
+
 	
 	return 0;
 }

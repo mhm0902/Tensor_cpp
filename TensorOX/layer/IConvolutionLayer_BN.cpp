@@ -20,6 +20,13 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 	m_pstBias = NULL;
 	m_pstWeights = NULL;
 	m_bHasBias = true;
+
+	if (_kernelWeights.count < 1 && _kernelWeights.values == NULL)
+	{
+		printf("CNN_ConvLayer kernelWeights error\n!");
+		return;
+	}
+
 	if (_biasWeights.count > 0 && _biasWeights.values != NULL)//以后遇到再实现
 	{		
 		
@@ -33,6 +40,8 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 			printf("CNN_ConvLayer m_pstBias malloc error\n!");
 			return;
 		}
+		memset(m_pstBias, 0, sizeof(Weights));
+
 		m_pstBias->type = _betaWeights.type;
 		m_pstBias->count = _betaWeights.count;
 
@@ -40,22 +49,36 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 
 		if (0 == iTypeSize)
 		{
+			free(m_pstBias);
+			m_pstBias = NULL;
 			return;
 		}
 
 		int iBiasNum = _betaWeights.count;
 
-		float* pfBais = (float *)(_betaWeights.values);
+		float* pfBais = (float*)malloc(_betaWeights.count*iTypeSize);
+
+		float* pfBeta = (float *)(_betaWeights.values);
 		float* pfGamm = (float*)(_gammaWeights.values);
 		float* pfMean = (float*)(_meanWeights.values);
 		float* pfVarr = (float*)(_varWeights.values);
 
 		for (int j = 0; j < iBiasNum; j++)
 		{
-			float fGam = pfGamm[j];
-			float fMean = pfMean[j];
-			float fVar = sqrt(pfVarr[j] + _fEps);
-			pfBais[j] -= fGam * fMean / fVar;
+			double fGam = pfGamm[j];
+			double fMean = pfMean[j];
+			double fVarr = pfVarr[j];
+
+			if (abs(fVarr) < _fEps)
+			{
+				fVarr = sqrt(fVarr + _fEps);
+			}
+			else
+			{
+				fVarr = sqrt(fVarr);
+			}
+			//double fVar = sqrt(pfVarr[j] + _fEps);
+			pfBais[j] = pfBeta[j] - fGam * fMean / fVarr;
 			//pfBais++;
 		}
 
@@ -63,23 +86,26 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 
 		if (NULL == m_pstBias->values)
 		{
+			free(m_pstBias);
+			m_pstBias = NULL;
+			free(pfBais);
 			printf("CNN_ConvLayer m_pstBias->values malloc error\n!");
 			return;
 		}
 
-		int iStatus = CNN_GPU_Memcpy(_betaWeights.count * iTypeSize, _betaWeights.values, (void*)(m_pstBias->values));
+		int iStatus = CNN_GPU_Memcpy(_betaWeights.count * iTypeSize, (void*)pfBais, (void*)(m_pstBias->values));
+
+		free(pfBais);
 
 		if (iStatus != 0)
 		{
+			free(m_pstBias);
+			m_pstBias = NULL;
 			printf("CNN_ConvLayer m_pstBias->values CNN_GPU_Memcpy error\n!");
 			return;
 		}
 	}
-	if (_kernelWeights.count < 1 && _kernelWeights.values == NULL)
-	{
-		printf("CNN_ConvLayer kernelWeights error\n!");
-		return;
-	}
+
 	m_pstWeights = (Weights*)malloc(sizeof(Weights));		//数据
 
 	if (NULL == m_pstWeights)
@@ -87,6 +113,7 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 		printf("CNN_ConvLayer m_pstWeights malloc error\n!");
 		return;
 	}
+	memset(m_pstWeights, 0, sizeof(Weights));
 	m_pstWeights->type = _kernelWeights.type;
 	m_pstWeights->count = _kernelWeights.count;
 
@@ -94,6 +121,8 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 
 	if (0 == iTypeSize)
 	{
+		free(m_pstWeights);
+		m_pstWeights = NULL;
 		return;
 	}
 
@@ -101,33 +130,60 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 
 	if (NULL == m_pstWeights->values)
 	{
+		free(m_pstWeights);
+		m_pstWeights = NULL;
 		printf("CNN_ConvLayer m_pstWeights->values malloc error\n!");
 		return;
 	}
 
 	int iKernelSize = _kernelSize.d[1] * _kernelSize.d[2] * _kernelSize.d[3];//chw
 	int iKernelNum = _kernelSize.d[0];//n					_kernelWeights.count / iKernelSize;
-	float * pfKWeights = (float *)(_kernelWeights.values);
+	float * pfKernel = (float *)(_kernelWeights.values);
 	float* pfGamm = (float*)(_gammaWeights.values);
 	float* pfVarr = (float*)(_varWeights.values);
+
+	float* pfKWeights = (float*)malloc(_kernelWeights.count * iTypeSize);
+
+	if (NULL == pfKWeights)
+	{
+		free(m_pstWeights);
+		m_pstWeights = NULL;
+		printf("CNN_ConvLayer pfKWeights malloc error\n!");
+		return;
+	}
+	memset(pfKWeights, 0, _kernelWeights.count * iTypeSize);
 
 	for (int j = 0; j < iKernelNum; j++)
 	{
 		//权重更新
-		float fGam = pfGamm[j];
-		float fVar = sqrt( pfVarr[j] + _fEps );
-		float fW = fGam / fVar;
+		double fGam = pfGamm[j];
+		//double fVar = sqrt( pfVarr[j] + _fEps );
+		double fVarr = pfVarr[j];
+
+		if (abs(fVarr) < _fEps)
+		{
+			fVarr = sqrt(fVarr + _fEps);
+		}
+		else
+		{
+			fVarr = sqrt(fVarr);
+		}
+		double fW = fGam / fVarr;
+
 		for (int k = 0; k < iKernelSize; k++)
 		{
-			pfKWeights[j*iKernelSize + k] *= fW;
-
+			pfKWeights[j*iKernelSize + k] = pfKernel[j*iKernelSize + k] * fW;
 		}
 	}
 
-	int iStatus = CNN_GPU_Memcpy(_kernelWeights.count * iTypeSize, _kernelWeights.values, (void*)(m_pstWeights->values));
+	int iStatus = CNN_GPU_Memcpy(_kernelWeights.count * iTypeSize, (void*)pfKWeights, (void*)(m_pstWeights->values));
+
+	free(pfKWeights);
 
 	if (iStatus != 0)
 	{
+		free(m_pstWeights);
+		m_pstWeights = NULL;
 		printf("CNN_ConvLayer m_pstWeights->values CNN_GPU_Memcpy error\n!");
 		return;
 	}
@@ -257,6 +313,7 @@ int IConvolutionLayer_BN::forward(void* _pInData, Dims _stInPut, void* _pOutData
 		cudnnCreateTensorDescriptor(&bias_descriptor);
 		//cudnnSetTensor4dDescriptorEx(bias_descriptor, CUDNN_DATA_FLOAT, _stInPut.d[0], _stInPut.d[1], 1, 1, _stInPut.d[0], _stInPut.d[1], 1, 1);
 		eStatus = setTensor4dDesc<float>(&bias_descriptor, 1, m_pstBias->count, 1, 1);
+		//eStatus = setTensor4dDesc<double>(&bias_descriptor, 1, m_pstBias->count, 1, 1);
 		auto alpha = 1.0f, beta = 1.0f;
 		eStatus = cudnnAddTensor(handle, &alpha, bias_descriptor, m_pstBias->values, &beta, output_descriptor, _pOutData);
 
@@ -283,6 +340,7 @@ int IConvolutionLayer_BN::forward(void* _pInData, Dims _stInPut, void* _pOutData
 
 int IConvolutionLayer_BN::forwardGMM(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut, void *_pBiasMultip, void *_pBuffer)
 {
+#if 1
 	_stOutPut.nbDims = _stInPut.nbDims;
 	_stOutPut.d[0] = _stInPut.d[0];//n
 	_stOutPut.d[1] = m_stKernel.d[0];	// c 
@@ -302,28 +360,124 @@ int IConvolutionLayer_BN::forwardGMM(void* _pInData, Dims _stInPut, void* _pOutD
 
 	const float* weight = (float*)(m_pstWeights->values);
 
+	int iBuffSize = sizeof(float)* N * m_stKernel.d[2] * m_stKernel.d[3] * _stInPut.d[1] * _stInPut.d[0];
+
+	float *gmm_buf = nullptr;
+
 	for (int n = 0; n < _stInPut.d[0]; ++n)
 	{
-		const float* col_buff = ((float*)_pInData) + n * iInputStep;
+		float* col_buff = ((float*)_pInData) + n * iInputStep;
 		if (!b1x1)
 		{
+			if (nullptr == gmm_buf) {
+				cudaMalloc((void**)&gmm_buf, iBuffSize);//
+			}
+			if (nullptr == gmm_buf)
+			{
+				printf("forwardGMM cudaMalloc gmm_buf error\n");
+				continue;
+			}
+
 			CNN_Im2Col_GPU<float>(col_buff, _stInPut.d[1], _stInPut.d[2], _stInPut.d[3],
 				m_stKernel.d[2], m_stKernel.d[3],
 				m_stPadding.d[0], m_stPadding.d[1],
 				m_stStride.d[0], m_stStride.d[1],
 				m_stDilation.d[0], m_stDilation.d[1],
-				(float*)_pBuffer);
-			col_buff = (float*)_pBuffer;
+				(float*)gmm_buf);
+			col_buff = (float*)gmm_buf;
 		}
-		CNN_Util_Math_Gemm_GPU(CblasNoTrans, CblasNoTrans, M, N, K,
+		cublasStatus_t eStatus = CNN_Util_Math_Gemm_GPU(CblasNoTrans, CblasNoTrans, M, N, K,
 			1., weight, col_buff, 0., (float*)_pOutData + n * iOutputStep, hCuBLAS);
+
+		if (CUBLAS_STATUS_SUCCESS != eStatus)
+		{
+			printf("CNN_Util_Math_Gemm_GPU error:%d\n", eStatus);
+		}
 
 		if (m_bHasBias)
 		{
-			CNN_Util_Math_Gemm_GPU(CblasNoTrans, CblasNoTrans, M, N, 1,
-				1., (float*)(m_pstBias->values), (float*)_pBiasMultip, 1., (float*)_pOutData + n * iOutputStep, hCuBLAS);
+			//int iOutSize = pstBasicInfos->iOutputW * pstBasicInfos->iOutputH;
+			void * tmp_buf = nullptr;
+
+			cudaMalloc((void**)&tmp_buf, N * sizeof(float));//
+
+			CNN_Util_Math_Set_GPU(N, 1.0f, (float*)tmp_buf);
+
+			eStatus = CNN_Util_Math_Gemm_GPU(CblasNoTrans, CblasNoTrans, M, N, 1,
+				1., (float*)(m_pstBias->values), (float*)tmp_buf, 1., (float*)_pOutData + n * iOutputStep, hCuBLAS);
+
+			if (CUBLAS_STATUS_SUCCESS != eStatus)
+			{
+				printf("CNN_Util_Math_Gemm_GPU error:%d\n", eStatus);
+			}
+
+			cudaFree(tmp_buf);
 		}
 	}
-
+	if (gmm_buf != nullptr)
+	{
+		cudaFree(gmm_buf);
+	}
+	cublasDestroy_v2(hCuBLAS);
 	return 0;
+#else
+	_stOutPut.nbDims = _stInPut.nbDims;
+	_stOutPut.d[0] = _stInPut.d[0];//n
+	_stOutPut.d[1] = m_stKernel.d[0];	// c 
+	int iFeatMap_h = _stOutPut.d[2] = 1 + (_stInPut.d[2] + 2 * m_stPadding.d[0] - m_stKernel.d[2]) / m_stStride.d[0]; //h
+	int iFeatMap_w = _stOutPut.d[3] = 1 + (_stInPut.d[3] + 2 * m_stPadding.d[1] - m_stKernel.d[3]) / m_stStride.d[1]; //w
+
+	int M = m_stKernel.d[0];
+	int N = iFeatMap_h * iFeatMap_w;
+	int K = _stInPut.d[1] * m_stKernel.d[2] * m_stKernel.d[3];
+	fecnn::StorageT* weights = (fecnn::StorageT*)(m_pstWeights->values);
+
+	fecnn::StorageT* col_buff = nullptr;
+	int iBuffSize = sizeof(fecnn::StorageT)* N * m_stKernel.d[2] * m_stKernel.d[3] * _stInPut.d[1] * _stInPut.d[0];
+	//float *gmm_buf = nullptr;
+
+	if (nullptr == col_buff) {
+		cudaMalloc((void**)&col_buff, iBuffSize);//
+	}
+	if (nullptr == col_buff)
+	{
+		printf("forwardGMM cudaMalloc gmm_buf error\n");
+		return -2;
+	}
+	fecnn::im2col_gpu((fecnn::StorageT*)_pInData, _stInPut.d[1], _stInPut.d[2], _stInPut.d[3],
+		m_stKernel.d[2], m_stKernel.d[3],
+		m_stPadding.d[0], m_stPadding.d[1],
+		m_stStride.d[0], m_stStride.d[1],
+		1, 1, col_buff);
+
+	cublasHandle_t hCuBLAS = NULL;
+
+	cublasCreate_v2(&hCuBLAS);
+
+	fecnn::fecnn_gpu_gemm(hCuBLAS, CUBLAS_OP_N, CUBLAS_OP_T,
+		M, N, K,
+		(fecnn::StorageT)1., (fecnn::StorageT*)_pOutData,
+		col_buff,
+		(fecnn::StorageT)1., weights);
+
+	void * bias_multGPU = nullptr;
+
+	cudaMalloc((void**)&bias_multGPU, N * sizeof(fecnn::StorageT));//
+
+	CNN_Util_Math_Set_GPU(N, 1.0f, (fecnn::StorageT*)bias_multGPU);
+
+	fecnn::fecnn_gpu_gemm(hCuBLAS, CUBLAS_OP_N, CUBLAS_OP_N,
+		M, N, 1,
+		(fecnn::StorageT)1., (fecnn::StorageT*)(m_pstBias->values), (fecnn::StorageT*)bias_multGPU,
+		(fecnn::StorageT)1., (fecnn::StorageT*)_pOutData);
+
+	cudaFree(bias_multGPU);
+
+	if (col_buff != nullptr)
+	{
+		cudaFree(col_buff);
+	}
+	cublasDestroy_v2(hCuBLAS);
+	return 0;
+#endif // 0
 }

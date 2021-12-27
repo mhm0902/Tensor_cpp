@@ -1,5 +1,5 @@
 #include "C3.h"
-
+#include<iomanip>
 
 
 C3::C3(std::map<std::string, Weights>& weightMap, int inch, int c1, int c2, int n, bool shortcut, int g, float e, std::string lname)
@@ -25,7 +25,7 @@ C3::C3(std::map<std::string, Weights>& weightMap, int inch, int c1, int c2, int 
 
 	//Weights emptywts{ DataType::kFLOAT, nullptr, 0 };
 
-	//cv3 = new IConvolutionLayer(64, DimsNCHW{ 64, 64, 1, 1 }, weightMap[lname + ".cv3.conv.weight"], emptywts);
+	//cv3 = new IConvolutionLayer(64, DimsNCHW{ c_ * 2, c2, 1, 1 }, weightMap[lname + ".cv3.conv.weight"], emptywts);
 
 	//cudaMalloc((void**)&buffer1, 8 * INPUT_H * INPUT_W * sizeof(float));
 
@@ -115,14 +115,6 @@ int C3::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut,
 	void *buffer3 = (char*)buffer2 + get_bolck_size(stDimCv1) * sizeof(float);
 
 	cat->forward(y1, stDimCv1, y2, stDimCv2, buffer3, stDimCv3);
-
-	//cudaStream_t stream;
-	//cudaStreamCreate(&stream);
-	//size_t iszie = get_bolck_size(stDimCv3) * sizeof(float);
-	//float *prob = (float*)malloc(iszie);
-	//cudaMemcpyAsync(prob, buffer3, iszie, cudaMemcpyDeviceToHost, stream);
-
-	tmp_buf = (char*)buffer3 + get_bolck_size(stDimCv3) * sizeof(float);
 
 	cv3->forward(buffer3, stDimCv3, _pOutData, _stOutPut, tmp_buf);
 

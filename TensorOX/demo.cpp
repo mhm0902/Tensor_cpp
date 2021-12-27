@@ -87,7 +87,32 @@ void nms(std::vector<Detection>& res, float *output, float conf_thresh, float nm
 		}
 	}
 }
-
+cv::Rect get_rect(cv::Mat& img, float bbox[4]) {
+	float l, r, t, b;
+	float r_w = INPUT_W / (img.cols * 1.0);
+	float r_h = INPUT_H / (img.rows * 1.0);
+	if (r_h > r_w) {
+		l = bbox[0] - bbox[2] / 2.f;
+		r = bbox[0] + bbox[2] / 2.f;
+		t = bbox[1] - bbox[3] / 2.f - (INPUT_H - r_w * img.rows) / 2;
+		b = bbox[1] + bbox[3] / 2.f - (INPUT_H - r_w * img.rows) / 2;
+		l = l / r_w;
+		r = r / r_w;
+		t = t / r_w;
+		b = b / r_w;
+	}
+	else {
+		l = bbox[0] - bbox[2] / 2.f - (INPUT_W - r_h * img.cols) / 2;
+		r = bbox[0] + bbox[2] / 2.f - (INPUT_W - r_h * img.cols) / 2;
+		t = bbox[1] - bbox[3] / 2.f;
+		b = bbox[1] + bbox[3] / 2.f;
+		l = l / r_h;
+		r = r / r_h;
+		t = t / r_h;
+		b = b / r_h;
+}
+	return cv::Rect(round(l), round(t), round(r - l), round(b - t));
+}
 int main()
 {
 #if 0
@@ -126,12 +151,12 @@ int main()
 	cudaMalloc((void**)&buffer, 8 * INPUT_H * INPUT_W * sizeof(float));
 
 	cudaMemcpyAsync(img_device, img.data, size_image, cudaMemcpyHostToDevice, stream);
-	preprocess_kernel_img(img_device, img.cols, img.rows, (float*)buffer, INPUT_W, INPUT_H, stream);
+	preprocess_kernel_img<float>(img_device, img.cols, img.rows, (float*)buffer, INPUT_W, INPUT_H, stream);
 
 	Dims dim_out = DimsNCHW(1, 3, INPUT_H, INPUT_W);
 
 	void * tmp_buf = nullptr;
-	int iBuf_size = 32 * INPUT_H * INPUT_W * sizeof(float)*3;
+	int iBuf_size = 32 * 640 * 640 * sizeof(float)*3;
 	cudaMalloc((void**)&tmp_buf, iBuf_size);//
 
 
@@ -148,14 +173,16 @@ int main()
 
 		nms(res, prob, 0.5, 0.4);
 
+		for (size_t j = 0; j < res.size(); j++) {
+			cv::Rect r = get_rect(img, res[j].bbox);
+			cv::rectangle(img, r, cv::Scalar(0x27, 0xC1, 0x36), 2);
+			cv::putText(img, std::to_string((int)res[j].class_id), cv::Point(r.x, r.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
+		}
+		cv::imwrite("_res.jpg", img);
+
 		printf("__---------%f\n", (iEnd - iStart) * 1000.0 / cv::getTickFrequency());
 	}
 
-
-	//upsample11->forward(img_device, dim_out1, );
-	//assert(upsample11);
-	//upsample11->setResizeMode(ResizeMode::kNEAREST);
-	//upsample11->setOutputDimensions(bottleneck_csp6->getOutput(0)->getDimensions());
 #endif // 1
 	return 0;
 }

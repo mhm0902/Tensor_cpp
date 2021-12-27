@@ -1,26 +1,26 @@
 #include "preprocess.h"
 #include <opencv2/opencv.hpp>
 
-__global__ void warpaffine_kernel(
+template <typename Dtype> __global__ void warpaffine_kernel(
 	uint8_t* src, int src_line_size, int src_width,
-	int src_height, float* dst, int dst_width,
+	int src_height, Dtype* dst, int dst_width,
 	int dst_height, uint8_t const_value_st,
 	AffineMatrix d2s, int edge) {
 	int position = blockDim.x * blockIdx.x + threadIdx.x;
 	if (position >= edge) return;
 
-	float m_x1 = d2s.value[0];
-	float m_y1 = d2s.value[1];
-	float m_z1 = d2s.value[2];
-	float m_x2 = d2s.value[3];
-	float m_y2 = d2s.value[4];
-	float m_z2 = d2s.value[5];
+	Dtype m_x1 = d2s.value[0];
+	Dtype m_y1 = d2s.value[1];
+	Dtype m_z1 = d2s.value[2];
+	Dtype m_x2 = d2s.value[3];
+	Dtype m_y2 = d2s.value[4];
+	Dtype m_z2 = d2s.value[5];
 
 	int dx = position % dst_width;
 	int dy = position / dst_width;
-	float src_x = m_x1 * dx + m_y1 * dy + m_z1 + 0.5f;
-	float src_y = m_x2 * dx + m_y2 * dy + m_z2 + 0.5f;
-	float c0, c1, c2;
+	Dtype src_x = m_x1 * dx + m_y1 * dy + m_z1 + 0.5f;
+	Dtype src_y = m_x2 * dx + m_y2 * dy + m_z2 + 0.5f;
+	Dtype c0, c1, c2;
 
 	if (src_x <= -1 || src_x >= src_width || src_y <= -1 || src_y >= src_height) {
 		// out of range
@@ -67,7 +67,7 @@ __global__ void warpaffine_kernel(
 	}
 
 	//bgr to rgb 
-	float t = c2;
+	Dtype t = c2;
 	c2 = c0;
 	c0 = t;
 
@@ -78,17 +78,17 @@ __global__ void warpaffine_kernel(
 
 	//rgbrgbrgb to rrrgggbbb
 	int area = dst_width * dst_height;
-	float* pdst_c0 = dst + dy * dst_width + dx;
-	float* pdst_c1 = pdst_c0 + area;
-	float* pdst_c2 = pdst_c1 + area;
+	Dtype* pdst_c0 = dst + dy * dst_width + dx;
+	Dtype* pdst_c1 = pdst_c0 + area;
+	Dtype* pdst_c2 = pdst_c1 + area;
 	*pdst_c0 = c0;
 	*pdst_c1 = c1;
 	*pdst_c2 = c2;
 }
 
-void preprocess_kernel_img(
+template< typename Dtype> void preprocess_kernel_img(
 	uint8_t* src, int src_width, int src_height,
-	float* dst, int dst_width, int dst_height,
+	Dtype* dst, int dst_width, int dst_height,
 	cudaStream_t stream) {
 	AffineMatrix s2d, d2s;
 	float scale = std::min(dst_height / (float)src_height, dst_width / (float)src_width);
@@ -109,9 +109,13 @@ void preprocess_kernel_img(
 	int jobs = dst_height * dst_width;
 	int threads = 256;
 	int blocks = ceil(jobs / (float)threads);
-	warpaffine_kernel << <blocks, threads, 0, stream >> >(
+	warpaffine_kernel<Dtype> << <blocks, threads, 0, stream >> >(
 		src, src_width * 3, src_width,
 		src_height, dst, dst_width,
 		dst_height, 128, d2s, jobs);
 
 }
+
+
+template void preprocess_kernel_img<float>(uint8_t* src, int src_width, int src_height,float* dst, int dst_width, int dst_height,cudaStream_t stream);
+template void preprocess_kernel_img<double>(uint8_t* src, int src_width, int src_height,double* dst, int dst_width, int dst_height,cudaStream_t stream);
