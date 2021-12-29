@@ -13,7 +13,7 @@
 
 #include "opencv2\opencv.hpp"
 
-//ºóÆÚÓÅ»¯ÊµÏÖ
+//ï¿½ï¿½ï¿½ï¿½ï¿½Å»ï¿½Êµï¿½ï¿½
 IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeights, Weights _biasWeights,
 	Weights _gammaWeights, Weights _betaWeights, Weights _meanWeights, Weights _varWeights, float _fEps)
 {
@@ -27,13 +27,13 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 		return;
 	}
 
-	if (_biasWeights.count > 0 && _biasWeights.values != NULL)//ÒÔºóÓöµ½ÔÙÊµÏÖ
+	if (_biasWeights.count > 0 && _biasWeights.values != NULL)//ï¿½Ôºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½
 	{		
 		
 	}
 	else
 	{
-		m_pstBias = (Weights*)malloc(sizeof(Weights));		//BiasÊý¾Ý
+		m_pstBias = (Weights*)malloc(sizeof(Weights));		//Biasï¿½ï¿½ï¿½ï¿½
 
 		if (NULL == m_pstBias)
 		{
@@ -106,7 +106,7 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 		}
 	}
 
-	m_pstWeights = (Weights*)malloc(sizeof(Weights));		//Êý¾Ý
+	m_pstWeights = (Weights*)malloc(sizeof(Weights));		//ï¿½ï¿½ï¿½ï¿½
 
 	if (NULL == m_pstWeights)
 	{
@@ -155,7 +155,7 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 
 	for (int j = 0; j < iKernelNum; j++)
 	{
-		//È¨ÖØ¸üÐÂ
+		//È¨ï¿½Ø¸ï¿½ï¿½ï¿½
 		double fGam = pfGamm[j];
 		//double fVar = sqrt( pfVarr[j] + _fEps );
 		double fVarr = pfVarr[j];
@@ -190,11 +190,11 @@ IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeig
 
 	m_stKernel = _kernelSize;
 
-	//¾í»ý²ÎÊý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	m_iGroup = 1;
-	m_stDilation	= DimsHW(1, 1);	//ºË¿í¶È·½ÏòÌî³äÏñËØÊý
-	m_stStride		= DimsHW(1, 1);	//¿í¶È·½Ïò²½³¤
-	m_stPadding		= DimsHW(0, 0);	//¿í¶È·½ÏòÌî³äÏñËØÊý
+	m_stDilation	= DimsHW(1, 1);	//ï¿½Ë¿ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	m_stStride		= DimsHW(1, 1);	//ï¿½ï¿½ï¿½È·ï¿½ï¿½ò²½³ï¿½
+	m_stPadding		= DimsHW(0, 0);	//ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 }
 
 

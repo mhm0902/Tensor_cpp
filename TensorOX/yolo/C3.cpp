@@ -116,6 +116,8 @@ int C3::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut,
 
 	cat->forward(y1, stDimCv1, y2, stDimCv2, buffer3, stDimCv3);
 
+	tmp_buf = (char*)buffer3 + get_bolck_size(stDimCv3) * sizeof(float);
+
 	cv3->forward(buffer3, stDimCv3, _pOutData, _stOutPut, tmp_buf);
 
 	//cv3->forward(buffer3, stDimCv3, _pOutData, _stOutPut);
