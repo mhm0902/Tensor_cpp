@@ -12,7 +12,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{42F24DDC-1FE4-404E-8441-7B805384691A}</ProjectGuid>
-    <RootNamespace>TensorOX</RootNamespace>
+    <RootNamespace>TensorMX</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
