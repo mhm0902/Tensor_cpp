@@ -97,8 +97,8 @@ int IPoolingLayer::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims 
 	_stOutPut.nbDims = _stInPut.nbDims;
 	_stOutPut.d[0] = _stInPut.d[0];
 	_stOutPut.d[1] = _stInPut.d[1];
-	_stOutPut.d[2] = _stInPut.d[2] / m_stStride.d[0];
-	_stOutPut.d[3] = _stInPut.d[3] / m_stStride.d[1];
+	_stOutPut.d[2] = (_stInPut.d[2] + 2 * m_stPadding.d[0] - m_stKernel.d[0]) / m_stStride.d[0] + 1;
+	_stOutPut.d[3] = (_stInPut.d[3] + 2 * m_stPadding.d[1] - m_stKernel.d[1]) / m_stStride.d[1] + 1;
 
 	switch (m_eMode)
 	{
@@ -128,7 +128,7 @@ int IPoolingLayer::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims 
 			(float*)_pOutData );
 	}
 	break;
-	case POOL_MAX_AVERAGE_BLEND:	//ÔÝ²»Ö§³Ö
+	case POOL_MAX_AVERAGE_BLEND:	//ï¿½Ý²ï¿½Ö§ï¿½ï¿½
 	default:
 		break;	//nothing
 	}
