@@ -92,13 +92,13 @@ __global__ void AvePoolForward(const int nthreads, const Dtype* const bottom_dat
 
 int IPoolingLayer::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims _stOutPut)
 {
-	int top_count = _stInPut.d[0] * _stInPut.d[1] * _stOutPut.d[2] * _stOutPut.d[3];
-
 	_stOutPut.nbDims = _stInPut.nbDims;
 	_stOutPut.d[0] = _stInPut.d[0];
 	_stOutPut.d[1] = _stInPut.d[1];
 	_stOutPut.d[2] = (_stInPut.d[2] + 2 * m_stPadding.d[0] - m_stKernel.d[0]) / m_stStride.d[0] + 1;
 	_stOutPut.d[3] = (_stInPut.d[3] + 2 * m_stPadding.d[1] - m_stKernel.d[1]) / m_stStride.d[1] + 1;
+
+	int top_count = _stOutPut.d[0] * _stOutPut.d[1] * _stOutPut.d[2] * _stOutPut.d[3];
 
 	switch (m_eMode)
 	{
