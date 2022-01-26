@@ -2,32 +2,57 @@
 
 template <typename Dtype> __global__ void ElementLayer_Prod(const int n, const Dtype* inA, Dtype*inB, Dtype* out)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < (n); i += blockDim.x * gridDim.x)
-	{
-		out[i] = inA[i] * inB[i];
-	}
+	//for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < (n); i += blockDim.x * gridDim.x)
+	//{
+	//	out[i] = inA[i] * inB[i];
+	//}
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if (i >= n)
+		return;
+
+	out[i] = inA[i] * inB[i];
 }
 template <typename Dtype> __global__ void ElementLayer_Sum(const int n, const Dtype* inA, Dtype*inB, Dtype* out)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < (n); i += blockDim.x * gridDim.x)
-	{
-		out[i] = inA[i] + inB[i];
-	}
+	//for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < (n); i += blockDim.x * gridDim.x)
+	//{
+	//	out[i] = inA[i] + inB[i];
+	//}
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= n)
+		return;
+	out[i] = inA[i] + inB[i];
 }
 template <typename Dtype> __global__ void ElementLayer_Max(const int n, const Dtype* inA, Dtype*inB, Dtype* out)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < (n); i += blockDim.x * gridDim.x)
+	//for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < (n); i += blockDim.x * gridDim.x)
+	//{
+	//	Dtype x = inA[i];
+	//	Dtype y = inB[i];
+	//	if (x > y)
+	//	{
+	//		out[i] = x;
+	//	}
+	//	else
+	//	{
+	//		out[i] = y;
+	//	}		
+	//}
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if (i >= n)
+		return;
+
+	Dtype x = inA[i];
+	Dtype y = inB[i];
+	if (x > y)
 	{
-		Dtype x = inA[i];
-		Dtype y = inB[i];
-		if (x > y)
-		{
-			out[i] = x;
-		}
-		else
-		{
-			out[i] = y;
-		}		
+		out[i] = x;
+	}
+	else
+	{
+		out[i] = y;
 	}
 }
 

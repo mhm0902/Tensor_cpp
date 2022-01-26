@@ -16,7 +16,13 @@ __global__ void MaxPoolForward(const int nthreads, const Dtype* const bottom_dat
 	const int stride_h, const int stride_w, const int pad_h, const int pad_w,
 	Dtype* const top_data, int* mask, Dtype* top_mask)
 {
-	CUDA_KERNEL_LOOP(index, nthreads)
+	//CUDA_KERNEL_LOOP(index, nthreads)
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
+	if (index >= nthreads)
+	{
+		return;
+	}
+	else
 	{
 		const int pw = index % pooled_width;
 		const int ph = (index / pooled_width) % pooled_height;
@@ -35,10 +41,10 @@ __global__ void MaxPoolForward(const int nthreads, const Dtype* const bottom_dat
 		{
 			for (int w = wstart; w < wend; ++w)
 			{
-				if (bottom_slice[h * width + w] > maxval)
+				Dtype m = bottom_slice[h * width + w];
+				if ( m > maxval)
 				{
-					maxidx = h * width + w;
-					maxval = bottom_slice[maxidx];
+					maxval = m;
 				}
 			}
 		}
@@ -61,7 +67,13 @@ __global__ void AvePoolForward(const int nthreads, const Dtype* const bottom_dat
 	const int pooled_height, const int pooled_width, const int kernel_h, const int kernel_w,
 	const int stride_h, const int stride_w, const int pad_h, const int pad_w, Dtype* const top_data)
 {
-	CUDA_KERNEL_LOOP(index, nthreads)
+	//CUDA_KERNEL_LOOP(index, nthreads)
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
+	if (index >= nthreads)
+	{
+		return;
+	}
+	else
 	{
 		const int pw = index % pooled_width;
 		const int ph = (index / pooled_width) % pooled_height;
@@ -90,8 +102,10 @@ __global__ void AvePoolForward(const int nthreads, const Dtype* const bottom_dat
 }
 
 
-int IPoolingLayer::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims _stOutPut)
+int IPoolingLayer::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut)
 {
+	//int top_count = _stInPut.d[0] * _stInPut.d[1] * _stInPut.d[2] * _stInPut.d[3];
+
 	_stOutPut.nbDims = _stInPut.nbDims;
 	_stOutPut.d[0] = _stInPut.d[0];
 	_stOutPut.d[1] = _stInPut.d[1];
@@ -99,6 +113,9 @@ int IPoolingLayer::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims 
 	_stOutPut.d[3] = (_stInPut.d[3] + 2 * m_stPadding.d[1] - m_stKernel.d[1]) / m_stStride.d[1] + 1;
 
 	int top_count = _stOutPut.d[0] * _stOutPut.d[1] * _stOutPut.d[2] * _stOutPut.d[3];
+	//H_out = floor((H_in + 2padding[0] - kernerl_size[0]) / stride[0] + 1)
+
+	//W_out = floor((W_in + 2padding[1] - kernerl_size[1]) / stride[1] + 1)
 
 	switch (m_eMode)
 	{
@@ -128,7 +145,7 @@ int IPoolingLayer::forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims 
 			(float*)_pOutData );
 	}
 	break;
-	case POOL_MAX_AVERAGE_BLEND:	//�ݲ�֧��
+	case POOL_MAX_AVERAGE_BLEND:	//暂不支持
 	default:
 		break;	//nothing
 	}
