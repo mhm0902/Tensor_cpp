@@ -1,7 +1,7 @@
 
 #include<stdio.h>
 #include<string.h>
-#include "opencv2\opencv.hpp"
+#include "opencv2/opencv.hpp"
 #include "common/preprocess.h"
 #include "yolo/yolo_v5_6.h"
 

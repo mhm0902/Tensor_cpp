@@ -11,7 +11,7 @@
 #include <cuda_runtime.h>
 #include <cudnn.h>
 
-#include "opencv2\opencv.hpp"
+#include "opencv2/opencv.hpp"
 
 //�����Ż�ʵ��
 IConvolutionLayer_BN::IConvolutionLayer_BN(Dims _kernelSize, Weights _kernelWeights, Weights _biasWeights,
