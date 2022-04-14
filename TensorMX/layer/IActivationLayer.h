@@ -3,19 +3,15 @@
 
 #include "algo_common.h"
 
-enum ActivateMode { Sigmoid, ReLU, Tanh, Silu };
+enum ActivateMode { Sigmoid, ReLU, Tanh, Silu, Invalid};
 
 class IActivationLayer
 {
 public:
-	IActivationLayer(ActivateMode _mode) {
-		m_eMode = _mode;
-	};
+	IActivationLayer() {};
 	~IActivationLayer() {};
 
-	int forward(void* _pInData, Dims _stInPut, void* _pOutData);
-private:
-	ActivateMode m_eMode;
-
+	int forward(void* _pInData, Dims _stInPut, void* _pOutData, ActivateMode _eMode = Silu);
+	//int forward_cudnn(void* _pInData, Dims _stInPut, void* _pOutData, ActivateMode _eMode = Silu);
 };
 #endif // ! _U_I_SILU_H__

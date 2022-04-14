@@ -14,8 +14,6 @@ public:
 	//传入数据地址是显存地址
 	int forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut);
 
-	int forwardGMM(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut, void *_pBiasMultip, void *_pBuffer);
-
 public:
 	int setPadding(Dims _iPadding)
 	{
