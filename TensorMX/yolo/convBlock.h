@@ -4,6 +4,8 @@
 #include "IConvolutionLayer.h"
 #include"IConvolutionLayer_BN.h"
 #include "IActivationLayer.h"
+#include "IScaleLayer.h"
+
 class convBlock
 {
 public:
@@ -13,9 +15,12 @@ public:
 	int forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut, void *_pBuffer);
 
 private:
-	IConvolutionLayer_BN* conv;
-	//IConvolutionLayer* conv;
+	//IConvolutionLayer_BN* conv;
+	IConvolutionLayer* conv;
+	IScaleLayer* bn1;
 	IActivationLayer* silu;
+
+	void *buffer;
 
 };
 #endif // !_ICONV_BLOCK_H__

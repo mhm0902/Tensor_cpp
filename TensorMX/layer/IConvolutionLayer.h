@@ -14,6 +14,8 @@ class IConvolutionLayer
 public:
 	IConvolutionLayer();
 	IConvolutionLayer(int _nbOutputMaps, Dims _kernelSize, Weights _kernelWeights, Weights _biasWeights);
+	IConvolutionLayer(Dims _kernelSize, Weights _kernelWeights, Weights _biasWeights, Weights _gammaWeights,
+		Weights _betaWeights, Weights _meanWeights, Weights _varWeights, float _fEps);
 	~IConvolutionLayer();
 	//传入数据地址是显存地址
 	int forward(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut);

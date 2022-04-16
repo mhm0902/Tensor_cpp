@@ -18,13 +18,13 @@ IConvolutionLayer::IConvolutionLayer()
 	m_pstWeights = NULL;
 	m_bHasBias = false;
 	m_eAct = Invalid;
-	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	//¾í»ý²ÎÊý
 	m_iGroup = 1;
-	m_stDilation = DimsHW(1, 1);	//ï¿½Ë¿ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-	m_stStride = DimsHW(1, 1);	//ï¿½ï¿½ï¿½È·ï¿½ï¿½ò²½³ï¿½
-	m_stPadding = DimsHW(0, 0);	//ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	m_stDilation = DimsHW(1, 1);	//ºË¿í¶È·½ÏòÌî³äÏñËØÊý
+	m_stStride = DimsHW(1, 1);	//¿í¶È·½Ïò²½³¤
+	m_stPadding = DimsHW(0, 0);	//¿í¶È·½ÏòÌî³äÏñËØÊý
 
-								//m_iChannelAxis	= 0;			//Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î¬ï¿½È£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¹ï¿½Ã£ï¿½
+								//m_iChannelAxis	= 0;			//Í¨µÀÊýËùÔÚÎ¬¶È£¨ºóÐøÀ©Õ¹ÓÃ£©
 }
 IConvolutionLayer::IConvolutionLayer(int _nbOutputMaps, Dims _kernelSize, Weights _kernelWeights, Weights _biasWeights)
 {
@@ -35,7 +35,7 @@ IConvolutionLayer::IConvolutionLayer(int _nbOutputMaps, Dims _kernelSize, Weight
 	if (_biasWeights.count > 0 && _biasWeights.values != NULL)
 	{
 		m_bHasBias = true;
-		m_pstBias = (Weights*)malloc(sizeof(Weights));		//Biasï¿½ï¿½ï¿½ï¿½
+		m_pstBias = (Weights*)malloc(sizeof(Weights));		//BiasÊý¾Ý
 
 		if (NULL == m_pstBias)
 		{
@@ -73,7 +73,7 @@ IConvolutionLayer::IConvolutionLayer(int _nbOutputMaps, Dims _kernelSize, Weight
 		printf("CNN_ConvLayer kernelWeights error\n!");
 		return;
 	}
-	m_pstWeights = (Weights*)malloc(sizeof(Weights));		//ï¿½ï¿½ï¿½ï¿½
+	m_pstWeights = (Weights*)malloc(sizeof(Weights));		//Êý¾Ý
 
 	if (NULL == m_pstWeights)
 	{
@@ -109,13 +109,279 @@ IConvolutionLayer::IConvolutionLayer(int _nbOutputMaps, Dims _kernelSize, Weight
 	m_nbOutputMaps = _nbOutputMaps;
 	m_stKernel = _kernelSize;
 
-	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	//¾í»ý²ÎÊý
 	m_iGroup = 0;
-	m_stDilation = DimsHW(1, 1);	//ï¿½Ë¿ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-	m_stStride = DimsHW(1, 1);	//ï¿½ï¿½ï¿½È·ï¿½ï¿½ò²½³ï¿½
-	m_stPadding = DimsHW(0, 0);	//ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	m_stDilation = DimsHW(1, 1);	//ºË¿í¶È·½ÏòÌî³äÏñËØÊý
+	m_stStride = DimsHW(1, 1);	//¿í¶È·½Ïò²½³¤
+	m_stPadding = DimsHW(0, 0);	//¿í¶È·½ÏòÌî³äÏñËØÊý
 
-	//m_iChannelAxis	= 0;			//Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î¬ï¿½È£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¹ï¿½Ã£ï¿½
+	//m_iChannelAxis	= 0;			//Í¨µÀÊýËùÔÚÎ¬¶È£¨ºóÐøÀ©Õ¹ÓÃ£©
+}
+IConvolutionLayer::IConvolutionLayer(Dims _kernelSize, Weights _kernelWeights, Weights _biasWeights,
+	Weights _gammaWeights, Weights _betaWeights, Weights _meanWeights, Weights _varWeights, float _fEps)
+{
+	m_pstBias = NULL;
+	m_pstWeights = NULL;
+	m_bHasBias = true;
+
+	if (_kernelWeights.count < 1 && _kernelWeights.values == NULL)
+	{
+		printf("CNN_ConvLayer kernelWeights error\n!");
+		return;
+	}
+
+	if (_biasWeights.count > 0 && _biasWeights.values != NULL)//ÒÔºóÓöµ½ÔÙÊµÏÖ
+	{
+		m_pstBias = (Weights*)malloc(sizeof(Weights));		//BiasÊý¾Ý
+
+		if (NULL == m_pstBias)
+		{
+			printf("CNN_ConvLayer m_pstBias malloc error\n!");
+			return;
+		}
+		memset(m_pstBias, 0, sizeof(Weights));
+
+		m_pstBias->type = _betaWeights.type;
+		m_pstBias->count = _betaWeights.count;
+
+		int iTypeSize = Get_Type_Szie(_betaWeights.type);
+
+		if (0 == iTypeSize)
+		{
+			free(m_pstBias);
+			m_pstBias = NULL;
+			return;
+		}
+
+		int iBiasNum = _betaWeights.count;
+
+		float* pfBais = (float*)malloc(_betaWeights.count*iTypeSize);
+
+		float* pfBeta = (float *)(_betaWeights.values);
+		float* pfGamm = (float*)(_gammaWeights.values);
+		float* pfMean = (float*)(_meanWeights.values);
+		float* pfVarr = (float*)(_varWeights.values);
+		float* pfSrcB = (float*)(_biasWeights.values);
+
+		for (int j = 0; j < iBiasNum; j++)
+		{
+			double fGam = pfGamm[j];
+			double fMean = pfMean[j];
+			double fVarr = pfVarr[j];
+			double fSrcB = pfSrcB[j];
+
+			fVarr = sqrt(fVarr + _fEps);
+			pfBais[j] = pfBeta[j] + fGam * (fSrcB - fMean) / fVarr;
+
+		}
+
+		m_pstBias->values = CNN_GPU_MemMaloc(0, _betaWeights.count * iTypeSize);
+
+		if (NULL == m_pstBias->values)
+		{
+			free(m_pstBias);
+			m_pstBias = NULL;
+			free(pfBais);
+			printf("CNN_ConvLayer m_pstBias->values malloc error\n!");
+			return;
+		}
+
+		int iStatus = CNN_GPU_Memcpy(_betaWeights.count * iTypeSize, (void*)pfBais, (void*)(m_pstBias->values));
+
+		free(pfBais);
+
+		if (iStatus != 0)
+		{
+			free(m_pstBias);
+			m_pstBias = NULL;
+			printf("CNN_ConvLayer m_pstBias->values CNN_GPU_Memcpy error\n!");
+			return;
+		}
+	}
+	else
+	{
+		m_pstBias = (Weights*)malloc(sizeof(Weights));		//BiasÊý¾Ý
+
+		if (NULL == m_pstBias)
+		{
+			printf("CNN_ConvLayer m_pstBias malloc error\n!");
+			return;
+		}
+		memset(m_pstBias, 0, sizeof(Weights));
+
+		m_pstBias->type = _betaWeights.type;
+		m_pstBias->count = _betaWeights.count;
+
+		int iTypeSize = Get_Type_Szie(_betaWeights.type);
+
+		if (0 == iTypeSize)
+		{
+			free(m_pstBias);
+			m_pstBias = NULL;
+			return;
+		}
+
+		int iBiasNum = _betaWeights.count;
+
+		float* pfBais = (float*)malloc(_betaWeights.count*iTypeSize);
+
+		float* pfBeta = (float *)(_betaWeights.values);
+		float* pfGamm = (float*)(_gammaWeights.values);
+		float* pfMean = (float*)(_meanWeights.values);
+		float* pfVarr = (float*)(_varWeights.values);
+
+		for (int j = 0; j < iBiasNum; j++)
+		{
+			double fGam = pfGamm[j];
+			double fMean = pfMean[j];
+			double fVarr = pfVarr[j];
+
+			//if (abs(fVarr) < _fEps)
+			//{
+			fVarr = sqrt(fVarr + _fEps);
+			//}
+			//else
+			//{
+			//	fVarr = sqrt(fVarr);
+			//}
+			//double fVar = sqrt(pfVarr[j] + _fEps);
+			pfBais[j] = (pfBeta[j] - fGam * fMean / fVarr);
+			//pfBais++;
+		}
+
+		m_pstBias->values = CNN_GPU_MemMaloc(0, _betaWeights.count * iTypeSize);
+
+		if (NULL == m_pstBias->values)
+		{
+			free(m_pstBias);
+			m_pstBias = NULL;
+			free(pfBais);
+			printf("CNN_ConvLayer m_pstBias->values malloc error\n!");
+			return;
+		}
+
+		int iStatus = CNN_GPU_Memcpy(_betaWeights.count * iTypeSize, (void*)pfBais, (void*)(m_pstBias->values));
+
+		free(pfBais);
+
+		if (iStatus != 0)
+		{
+			free(m_pstBias);
+			m_pstBias = NULL;
+			printf("CNN_ConvLayer m_pstBias->values CNN_GPU_Memcpy error\n!");
+			return;
+		}
+	}
+
+	m_pstWeights = (Weights*)malloc(sizeof(Weights));		//Êý¾Ý
+
+	if (NULL == m_pstWeights)
+	{
+		printf("CNN_ConvLayer m_pstWeights malloc error\n!");
+		return;
+	}
+	memset(m_pstWeights, 0, sizeof(Weights));
+	m_pstWeights->type = _kernelWeights.type;
+	m_pstWeights->count = _kernelWeights.count;
+
+	int iTypeSize = Get_Type_Szie(_kernelWeights.type);
+
+	if (0 == iTypeSize)
+	{
+		free(m_pstWeights);
+		m_pstWeights = NULL;
+		return;
+	}
+
+	m_pstWeights->values = CNN_GPU_MemMaloc(0, _kernelWeights.count * iTypeSize);
+
+	if (NULL == m_pstWeights->values)
+	{
+		free(m_pstWeights);
+		m_pstWeights = NULL;
+		printf("CNN_ConvLayer m_pstWeights->values malloc error\n!");
+		return;
+	}
+
+	int iKernelSize = _kernelSize.d[1] * _kernelSize.d[2] * _kernelSize.d[3];//chw
+	int iKernelNum = _kernelSize.d[0];//n					_kernelWeights.count / iKernelSize;
+	float * pfKernel = (float *)(_kernelWeights.values);
+	float* pfGamm = (float*)(_gammaWeights.values);
+	float* pfVarr = (float*)(_varWeights.values);
+
+	float* pfKWeights = (float*)malloc(_kernelWeights.count * iTypeSize);
+
+	if (NULL == pfKWeights)
+	{
+		free(m_pstWeights);
+		m_pstWeights = NULL;
+		printf("CNN_ConvLayer pfKWeights malloc error\n!");
+		return;
+	}
+	memset(pfKWeights, 0, _kernelWeights.count * iTypeSize);
+
+	for (int j = 0; j < iKernelNum; j++)
+	{
+		//È¨ÖØ¸üÐÂ
+		double fGam = pfGamm[j];
+		//double fVar = sqrt( pfVarr[j] + _fEps );
+		double fVarr = pfVarr[j];
+
+		//if (abs(fVarr) < _fEps)
+		//{
+		fVarr = sqrt(fVarr + _fEps);
+		//}
+		//else
+		//{
+		//	fVarr = sqrt(fVarr);
+		//}
+		double fW = fGam / fVarr;
+
+		for (int k = 0; k < iKernelSize; k++)
+		{
+			pfKWeights[j*iKernelSize + k] = (pfKernel[j*iKernelSize + k] * fW);
+		}
+	}
+	//std::ofstream outfile("outw.txt", std::ios::trunc);
+	//float* pfRes = (float*)pfKWeights;
+	//int chanle =  _kernelSize.d[1];
+	//int height =  _kernelSize.d[2];
+	//int weight =  _kernelSize.d[3];
+	//char acBuf[50] = {0};
+	//for (int n = 0; n < _kernelSize.d[0]; n++) {
+	//	outfile << "n:" << n << std::endl;
+	//	for (int c = 0; c < chanle; c++){
+	//		outfile << "c:"<< c << std::endl;
+	//		for (int h = 0; h < height; h++){
+	//			for (int w = 0; w < weight; w++){
+	//				sprintf(acBuf, " %f ", pfRes[n*chanle*height *weight + c*height *weight + h*weight + w]);
+	//				outfile.write(acBuf, strlen(acBuf));
+	//				//outfile << std::setiosflags(std::ios::left) << std::setw(20) << std::setfill(' ') << pfRes[n*chanle*height *weight +c*height *weight + h*weight + w] << " ";
+	//			}
+	//			outfile << std::endl;
+	//		}
+	//	}		
+	//}
+	//outfile.close();
+	int iStatus = CNN_GPU_Memcpy(_kernelWeights.count * iTypeSize, (void*)pfKWeights, (void*)(m_pstWeights->values));
+
+	free(pfKWeights);
+
+	if (iStatus != 0)
+	{
+		free(m_pstWeights);
+		m_pstWeights = NULL;
+		printf("CNN_ConvLayer m_pstWeights->values CNN_GPU_Memcpy error\n!");
+		return;
+	}
+
+	m_stKernel = _kernelSize;
+
+	//¾í»ý²ÎÊý
+	m_iGroup = 1;
+	m_stDilation = DimsHW(1, 1);	//ºË¿í¶È·½ÏòÌî³äÏñËØÊý
+	m_stStride = DimsHW(1, 1);	//¿í¶È·½Ïò²½³¤
+	m_stPadding = DimsHW(0, 0);	//¿í¶È·½ÏòÌî³äÏñËØÊý
 }
 
 IConvolutionLayer::~IConvolutionLayer()
@@ -538,6 +804,30 @@ __global__ void convolution(const int nthreads,
 	}
 }
 
+template __global__ void convolution<float>(const int nthreads,
+	const float* const _pInData, const int in_c,
+	const int height, const int width,
+	const int kernel_h, const int kernel_w,
+	const int stride_h, const int stride_w,
+	const int pad_h, const int pad_w,
+	const int bias_term, const float* const bias_data,
+	const float* const weight_data,
+	ActivateMode eAct,
+	float* const _pOutData, const int out_c, const int out_h, const int out_w
+	);
+
+template __global__ void convolution<double>(const int nthreads,
+	const double* const _pInData, const int in_c,
+	const int height, const int width,
+	const int kernel_h, const int kernel_w,
+	const int stride_h, const int stride_w,
+	const int pad_h, const int pad_w,
+	const int bias_term, const double* const bias_data,
+	const double* const weight_data,
+	ActivateMode eAct,
+	double* const _pOutData, const int out_c, const int out_h, const int out_w
+	);
+
 int IConvolutionLayer::forwardGMM(void* _pInData, Dims _stInPut, void* _pOutData, Dims &_stOutPut)
 {
 	const int inw = _stInPut.d[3];
@@ -556,15 +846,14 @@ int IConvolutionLayer::forwardGMM(void* _pInData, Dims _stInPut, void* _pOutData
 		count *= _stOutPut.d[i];
 	}
 
-	convolution << <CNN_GET_BLOCKS(count), CNN_CUDA_NUM_THREADS >> >(count,
-	 (float*)_pInData, inch,inh, inw,
-		m_stKernel.d[2], m_stKernel.d[3], 
-		m_stStride.d[0], m_stStride.d[1], 
-		m_stPadding.d[0], m_stPadding.d[1],
-		m_bHasBias, (float*)(m_pstBias->values), 
-		(float*)(m_pstWeights->values),m_eAct,
-		(float*)_pOutData, outch, outh, outw);
-	
+	convolution << <CNN_GET_BLOCKS(count), CNN_CUDA_NUM_THREADS >> >(count, (float*)_pInData, inch,inh, inw,
+		m_stKernel.d[2], m_stKernel.d[3], m_stStride.d[1], m_stStride.d[0], m_stPadding.d[1], m_stPadding.d[0],
+		m_bHasBias, (float*)(m_pstBias->values), (float*)(m_pstWeights->values),m_eAct,
+		(float*)_pOutData, outch, outh, outw);	
+
+	cudaDeviceSynchronize();
+
 	return 0;
 }
+
 
